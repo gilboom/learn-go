@@ -1,3 +1,3 @@
-module github.com/q86002618/learn-go/v2
+module github.com/q86002618/learn-go
 
 go 1.16

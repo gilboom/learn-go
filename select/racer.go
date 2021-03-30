@@ -23,6 +23,11 @@ func Racer(a, b string) (string, error) {
 	return ConfigurableRacer(a, b, tenSecondTimout)
 }
 
+func GetChannel() <-chan string {
+	ch := make(chan string)
+	return ch
+}
+
 func ConfigurableRacer(a, b string, timeout time.Duration) (string, error) {
 	select {
 	case <-ping(a):

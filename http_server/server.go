@@ -1,20 +1,33 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 )
 
 type PlayerStore interface {
 	GetPlayerScore(string) int
 	RecordWin(string)
+	GetLeague() []Player
 }
 
 type PlayerServer struct {
 	store PlayerStore
 	mu    sync.Mutex
+	http.Handler
+}
+
+func NewPlayerServer(store PlayerStore) *PlayerServer {
+	s := &PlayerServer{store: store}
+	router := http.NewServeMux()
+
+	router.Handle("/league", http.HandlerFunc(s.leagueHandler))
+	router.HandleFunc("/players/", http.HandlerFunc(s.playersHandler))
+
+	s.Handler = router
+	return s
 }
 
 func (s *PlayerServer) showScore(w http.ResponseWriter, player string) {
@@ -33,13 +46,30 @@ func (s *PlayerServer) processWins(w http.ResponseWriter, player string) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	player := strings.TrimPrefix(r.URL.Path, "/players/")
-	switch r.Method {
+type Player struct {
+	Name string
+	Wins int
+}
+
+const jsonContentType = "application/json"
+
+func (s *PlayerServer) leagueHandler(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("content-type", jsonContentType)
+	json.NewEncoder(writer).Encode(s.getLeagueTable())
+	writer.WriteHeader(http.StatusOK)
+}
+
+func (s *PlayerServer) getLeagueTable() []Player {
+	return s.store.GetLeague()
+}
+
+func (s *PlayerServer) playersHandler(writer http.ResponseWriter, request *http.Request) {
+	player := request.URL.Path[len("/players/"):]
+	switch request.Method {
 	case http.MethodPost:
-		s.processWins(w, player)
+		s.processWins(writer, player)
 	case http.MethodGet:
-		s.showScore(w, player)
+		s.showScore(writer, player)
 	}
 }
 

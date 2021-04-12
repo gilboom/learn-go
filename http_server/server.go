@@ -10,7 +10,7 @@ import (
 type PlayerStore interface {
 	GetPlayerScore(string) int
 	RecordWin(string)
-	GetLeague() []Player
+	GetLeague() League
 }
 
 type PlayerServer struct {
@@ -24,7 +24,7 @@ func NewPlayerServer(store PlayerStore) *PlayerServer {
 	router := http.NewServeMux()
 
 	router.Handle("/league", http.HandlerFunc(s.leagueHandler))
-	router.HandleFunc("/players/", http.HandlerFunc(s.playersHandler))
+	router.Handle("/players/", http.HandlerFunc(s.playersHandler))
 
 	s.Handler = router
 	return s
@@ -56,7 +56,7 @@ const jsonContentType = "application/json"
 func (s *PlayerServer) leagueHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", jsonContentType)
 	json.NewEncoder(writer).Encode(s.getLeagueTable())
-	writer.WriteHeader(http.StatusOK)
+	//writer.WriteHeader(http.StatusOK)
 }
 
 func (s *PlayerServer) getLeagueTable() []Player {
